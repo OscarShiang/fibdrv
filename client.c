@@ -35,6 +35,7 @@ int main()
                i, sz);
     }
 
+    /*
     for (int i = offset; i >= 0; i--) {
         lseek(fd, i, SEEK_SET);
         sz = read(fd, buf, 1);
@@ -43,6 +44,7 @@ int main()
                "%lld.\n",
                i, sz);
     }
+    */
 
     close(fd);
     return 0;

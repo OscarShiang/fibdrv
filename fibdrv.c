@@ -23,6 +23,7 @@ static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
+static ktime_t kt;
 
 static long long fib_sequence(long long k)
 {
@@ -60,7 +61,12 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
-    return (ssize_t) fib_sequence(*offset);
+    kt = ktime_get();
+    ssize_t result = fib_sequence(*offset);
+    kt = ktime_sub(ktime_get(), kt);
+
+    printk(KERN_INFO "%lld ", ktime_to_ns(kt));
+    return result;
 }
 
 /* write operation is skipped */
