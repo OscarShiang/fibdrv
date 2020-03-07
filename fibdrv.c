@@ -23,7 +23,6 @@ static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
-static ktime_t kt;
 
 static long long fib_sequence(long long k)
 {
@@ -38,6 +37,31 @@ static long long fib_sequence(long long k)
     }
 
     return f[k];
+}
+
+static long long fib_doubling(long long k)
+{
+    if (k == 0)
+        return 0;
+
+    long long t0 = 1, t1 = 1, t3 = 1, t4 = 0;
+
+    long long i = 1;
+    while (i < k) {
+        if ((i << 1) <= k) {
+            t4 = t1 * t1 + t0 * t0;
+            t3 = t0 * (2 * t1 - t0);
+            t0 = t3;
+            t1 = t4;
+            i <<= 1;
+        } else {
+            t0 = t3;
+            t3 = t4;
+            t4 = t0 + t4;
+            i++;
+        }
+    }
+    return t3;
 }
 
 static int fib_open(struct inode *inode, struct file *file)
@@ -61,12 +85,18 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
-    kt = ktime_get();
-    ssize_t result = fib_sequence(*offset);
+    ktime_t kt = ktime_get();
+    ssize_t adding = fib_sequence(*offset);
     kt = ktime_sub(ktime_get(), kt);
 
-    printk(KERN_INFO "%lld ", ktime_to_ns(kt));
-    return result;
+    ktime_t kt2 = ktime_get();
+    fib_doubling(*offset);
+    kt2 = ktime_sub(ktime_get(), kt2);
+
+    printk(KERN_INFO "%lld %lld %lld", *offset, ktime_to_ns(kt),
+           ktime_to_ns(kt2));
+
+    return adding;
 }
 
 /* write operation is skipped */
